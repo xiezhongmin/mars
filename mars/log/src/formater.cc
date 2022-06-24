@@ -41,12 +41,12 @@ namespace mars {
 namespace xlog {
 void log_formater(const XLoggerInfo* _info, const char* _logbody, PtrBuffer& _log) {
     static const char* levelStrings[] = {
-        "V",
-        "D",  // debug
-        "I",  // info
-        "W",  // warn
-        "E",  // error
-        "F"  // fatal
+        "Verbose",
+        "Debug",  // debug
+        "Info",  // info
+        "Warn",  // warn
+        "Error",  // error
+        "Fatal"  // fatal
     };
 
     assert((unsigned int)_log.Pos() == _log.Length());
@@ -101,10 +101,30 @@ void log_formater(const XLoggerInfo* _info, const char* _logbody, PtrBuffer& _lo
         }
 
         // _log.AllocWrite(30*1024, false);
-        int ret = snprintf((char*)_log.PosPtr(), 1024, "[%s][%s][%" PRIdMAX ", %" PRIdMAX "%s][%s][%s:%d, %s][",  // **CPPLINT SKIP**
-                           _logbody ? levelStrings[_info->level] : levelStrings[kLevelFatal], temp_time,
-                           _info->pid, _info->tid, _info->tid == _info->maintid ? "*" : "", _info->tag ? _info->tag : "",
-                           filename, _info->line, strFuncName);
+        
+        int ret = 0;
+        if (_info->tag != NULL) {
+            ret = snprintf((char*)_log.PosPtr(), 1024, "[%s][%" PRIdMAX ", %" PRIdMAX "%s] <%s:%d, %s> [%s] (%s)",  // **CPPLINT SKIP**
+                           temp_time,
+                           _info->pid, _info->tid, _info->tid == _info->maintid ? "*" : "",
+                           filename, _info->line, strFuncName,
+                           _logbody ? levelStrings[_info->level] : levelStrings[kLevelFatal],
+                           _info->tag ? _info->tag : ""
+                           );
+        } else {
+            ret = snprintf((char*)_log.PosPtr(), 1024, "[%s][%" PRIdMAX ", %" PRIdMAX "%s] <%s:%d, %s> [%s]",  // **CPPLINT SKIP**
+                           temp_time,
+                           _info->pid, _info->tid, _info->tid == _info->maintid ? "*" : "",
+                           filename, _info->line, strFuncName,
+                           _logbody ? levelStrings[_info->level] : levelStrings[kLevelFatal]
+                           );
+        }
+        
+        // 原方法
+//        int ret = snprintf((char*)_log.PosPtr(), 1024, "[%s][%s][%" PRIdMAX ", %" PRIdMAX "%s][%s][%s:%d, %s][",  // **CPPLINT SKIP**
+//                           _logbody ? levelStrings[_info->level] : levelStrings[kLevelFatal], temp_time,
+//                           _info->pid, _info->tid, _info->tid == _info->maintid ? "*" : "", _info->tag ? _info->tag : "",
+//                           filename, _info->line, strFuncName);
 
         assert(0 <= ret);
         _log.Length(_log.Pos() + ret, _log.Length() + ret);

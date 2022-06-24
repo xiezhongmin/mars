@@ -33,12 +33,12 @@ void ConsoleLog(const XLoggerInfo* _info, const char* _log)
     if (NULL==_info || NULL==_log) return;
     
     static const char* levelStrings[] = {
-        "V",
-        "D",  // debug
-        "I",  // info
-        "W",  // warn
-        "E",  // error
-        "F"  // fatal
+        "Verbose",
+        "Debug",  // debug
+        "Info",  // info
+        "Warn",  // warn
+        "Error",  // error
+        "Fatal"  // fatal
     };
     
     const char* strFuncName  = NULL == _info->func_name ? "" : _info->func_name;
@@ -47,8 +47,22 @@ void ConsoleLog(const XLoggerInfo* _info, const char* _log)
     char log[16 * 1024] = {0};
 
     if (kConsoleNSLog == sg_console_fun) {
-        snprintf(log, sizeof(log), "[%s][%s][%s:%d, %s][%s", levelStrings[_info->level], NULL == _info->tag ? "" : _info->tag, file_name, _info->line, strFuncName, _log);
-        NSLog(@"%@", [NSString stringWithUTF8String:log]);
+        if (_info->tag != NULL) {
+            snprintf(log, sizeof(log), "[%s] (%s)%s",
+                     levelStrings[_info->level],
+                     NULL == _info->tag ? "" : _info->tag,
+                    _log);
+            NSLog(@"%@", [NSString stringWithUTF8String:log]);
+        } else {
+            snprintf(log, sizeof(log), "[%s]%s",
+                     levelStrings[_info->level],
+                    _log);
+            NSLog(@"%@", [NSString stringWithUTF8String:log]);
+        }
+        
+        // 原方法
+//        snprintf(log, sizeof(log), "[%s][%s][%s:%d, %s][%s", levelStrings[_info->level], NULL == _info->tag ? "" : _info->tag, file_name, _info->line, strFuncName, _log);
+//        NSLog(@"%@", [NSString stringWithUTF8String:log]);
         return;
     }
 
@@ -61,10 +75,29 @@ void ConsoleLog(const XLoggerInfo* _info, const char* _log)
              tm.tm_gmtoff / 3600.0, tm.tm_hour, tm.tm_min, tm.tm_sec, _info->timeval.tv_usec / 1000);
 
 
-    snprintf(log, sizeof(log), "[%s][%s][%" PRIdMAX ", %" PRIdMAX "%s][%s][%s:%d, %s][%s",  // **CPPLINT SKIP**
-                       levelStrings[_info->level], temp_time,
-                       _info->pid, _info->tid, _info->tid == _info->maintid ? "*" : "", _info->tag ? _info->tag : "",
-                       file_name, _info->line, strFuncName, _log);
+    if (_info->tag != NULL) {
+        snprintf(log, sizeof(log), "[%s][%" PRIdMAX ", %" PRIdMAX "%s] <%s:%d, %s> [%s] (%s)%s",  // **CPPLINT SKIP**
+                 temp_time,
+                 _info->pid, _info->tid, _info->tid == _info->maintid ? "*" : "",
+                 file_name, _info->line, strFuncName,
+                 levelStrings[_info->level],
+                 _info->tag ? _info->tag : "",
+                 _log);
+    } else {
+        snprintf(log, sizeof(log), "[%s][%" PRIdMAX ", %" PRIdMAX "%s] <%s:%d, %s> [%s]%s",  // **CPPLINT SKIP**
+                 temp_time,
+                 _info->pid, _info->tid, _info->tid == _info->maintid ? "*" : "",
+                 file_name, _info->line, strFuncName,
+                 levelStrings[_info->level],
+                 _log);
+    }
+    
+    // 原方法
+//    snprintf(log, sizeof(log), "[%s][%s][%" PRIdMAX ", %" PRIdMAX "%s][%s][%s:%d, %s][%s",  // **CPPLINT SKIP**
+//                       levelStrings[_info->level], temp_time,
+//                       _info->pid, _info->tid, _info->tid == _info->maintid ? "*" : "", _info->tag ? _info->tag : "",
+//                       file_name, _info->line, strFuncName, _log);
+    
     printf("%s\n", log);
 }
 
